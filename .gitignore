@@ -4,8 +4,7 @@
 # then whitelist some files/folders
 !.gitignore
 
-#example:
-#!sine-wave/
-#sine-wave/*
-#!sine-wave/sine-wave.txt
+!fill-memory/
+fill-memory/*
+!fill-memory/fill-memory*.txt
 

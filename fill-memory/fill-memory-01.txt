@@ -1,0 +1,22 @@
+
+   10REM Copyright (c) 2020 0xC0DE (Twitter 0xC0DE6502)
+   20REM 6502 Asm experiment/tutorial: Fill Memory 01
+   30DIM code 1024-1: REM reserve 1024 bytes for our code
+   40FOR i=0 TO 3 STEP 3: REM inline assembler options: 0=suppress listing and errors, 3=show listing and errors
+   50P%=code: REM assemble our code at the reserved space of 1024 bytes
+   60REM left square bracket signifies start of assembly code
+   70[
+   80opt i ; special directive to select assembler option for this pass
+   90lda #0
+  100sta &3000
+  110sta &3001
+  120sta &3002
+  130sta &3003
+  140rts
+  150]: REM right square bracket signifies end of assembly code
+  160NEXT i: REM next assembler pass
+  170!&3000=&12345678
+  180PRINT"Before: &";~!&3000
+  190CALL code
+  200PRINT"After: &";~!&3000
+
