@@ -1,0 +1,29 @@
+; Copyright (c) 2020 0xC0DE (Twitter 0xC0DE6502)
+; 6502 Asm experiment/tutorial: Fill Memory 02
+; BeebAsm source (https://github.com/stardot/beebasm)
+;
+; Assemble with a command (in a .bat file) that is similar to:
+; \beebasm\beebasm.exe -v -i fill-memory-02.6502 -do fill-memory-02.ssd -boot FMEM02 -title FMEM02 > fill-memory-02-listing.txt
+;
+; Execute the resulting disc image (.ssd) with an emulator like BeebEm or Electrem; or with jsbeeb (https://bbc.godbolt.org/)
+;
+
+  org &2000 ; assemble our code at this address
+
+.start_program
+
+  ; fill a block of memory from &3000 to &30ff (256 bytes) with zeroes
+  ; deliberately *** FAULTY and INEFFICIENT! *** Can you fix and improve it?
+  ldx #0
+.fill
+  lda #0
+  sta &3000,x
+  inx
+  cpx #&ff
+  bne fill
+  rts
+
+.end_program
+
+  save "FMEM02", start_program, end_program
+
