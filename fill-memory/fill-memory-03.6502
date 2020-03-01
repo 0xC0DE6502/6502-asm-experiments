@@ -1,0 +1,82 @@
+; Copyright (c) 2020 0xC0DE (Twitter 0xC0DE6502)
+; 6502 Asm experiment/tutorial: Fill Memory 03
+; BeebAsm source (https://github.com/stardot/beebasm)
+;
+; Assemble with a command (in a .bat file) that is similar to:
+; \beebasm\beebasm.exe -v -i fill-memory-03.6502 -do fill-memory-03.ssd -boot FMEM03 -title FMEM03 > fill-memory-03-listing.txt
+;
+; Execute the resulting disc image (.ssd) with an emulator like BeebEm or Electrem; or with jsbeeb (https://bbc.godbolt.org/)
+;
+
+  org &0070 ; (uninitialised) zeropage variables go here
+.zaddr skip 2
+
+  org &2000 ; assemble our code at this address
+
+.start_program
+
+  ; fill a LARGE block of memory from &3000 to &7fff (20KB, i.e. ALL of screen memory) with an arbitrary value, 3 different methods
+  ; *** QUESTION 1: which method takes the least memory space (smallest)
+  ; *** QUESTION 2: which method takes the least CPU cycles (fastest)
+
+.again
+  jsr method1
+  jsr method2
+  jsr method3
+  jmp again
+
+  ; --------------------------------------------------------------------------------------------
+  ; METHOD 1: partially unrolled loop
+.method1
+{
+  lda #&5a
+  ldx #0
+.fill
+  for addr,&3000,&7f00,&100
+    sta addr,x
+  next ;addr
+  dex
+  beq exit: jmp fill ; *** QUESTION 3: why not simply "bne fill" here? *** QUESTION 4: how can we fix this?
+.exit
+  rts
+}
+
+  ; --------------------------------------------------------------------------------------------
+  ; METHOD 2: using zeropage indexing
+  ; *** QUESTION 5: what makes sure we don't fill past &8000 into ROM space?
+.method2
+{
+  ldy #0
+  sty zaddr
+  lda #&30
+  sta zaddr+1
+  lda #&66
+.fill
+  sta (zaddr),y
+  dey
+  bne fill
+  inc zaddr+1
+  bpl fill
+  rts
+}
+
+  ; --------------------------------------------------------------------------------------------
+  ; METHOD 3: self-modifying code
+.method3
+{
+  lda #&30
+  sta fill+2
+  lda #&a5
+  ldx #0
+.fill
+  sta &ff00,x ; *** QUESTION 6: why isn't this causing problems!? (because &ff00 is ROM space)
+  dex
+  bne fill
+  inc fill+2
+  bpl fill
+  rts
+} 
+
+.end_program
+
+  save "FMEM03", start_program, end_program
