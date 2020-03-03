@@ -1,0 +1,82 @@
+
+   10REM Copyright (c) 2020 0xC0DE (Twitter 0xC0DE6502)
+   20REM 6502 Asm experiment/tutorial: Fill Memory 03
+   30 
+   40REM fill a LARGE block of memory from &3000 to &7fff (20KB, i.e. ALL of screen memory) with an arbitrary value, 3 different methods
+   50REM *** QUESTION 1 = which method takes the least memory space (smallest)
+   60REM *** QUESTION 2 = which method takes the least CPU cycles (fastest)
+   70 
+   80DIM code 1024-1
+   90zeropage=&0070
+  100FOR i=0 TO 3 STEP 3
+  110 
+  120REM zeropage variables go here
+  130P%=zeropage
+  140[opt i
+  150.zaddr EQUW 0
+  160]
+  170 
+  180REM main program goes here
+  190P%=code
+  200[opt i
+  210.again
+  220  jsr method1
+  230  jsr method2
+  240  jsr method3
+  250  jmp again
+  260 
+  270\ --------------------------------------------------------------------------------------------
+  280\ METHOD 1 = partially unrolled loop
+  290.method1
+  300  lda #&5a
+  310  ldx #0
+  320.m1fill
+  330]
+  340FOR addr=&3000 TO &7F00 STEP &100
+  350[opt i
+  360  sta addr,X
+  370]
+  380NEXT addr
+  390[opt i
+  400  dex
+  410  beq exit: jmp m1fill \ *** QUESTION 3 = why not simply "bne m1fill" here? *** QUESTION 4 = how can we fix this?
+  420.exit
+  430  rts
+  440 
+  450\ --------------------------------------------------------------------------------------------
+  460\ METHOD 2 = using zeropage indexing
+  470\ *** QUESTION 5 = what makes sure we don't fill past &8000 into ROM space?
+  480.method2
+  490  ldy #0
+  500  sty zaddr
+  510  lda #&30
+  520  sta zaddr+1
+  530  lda #&66
+  540.m2fill
+  550  sta (zaddr),Y
+  560  dey
+  570  bne m2fill
+  580  inc zaddr+1
+  590  bpl m2fill
+  600  rts
+  610 
+  620\ --------------------------------------------------------------------------------------------
+  630\ METHOD 3 = self-modifying code
+  640.method3
+  650  lda #&30
+  660  sta m3fill+2
+  670  lda #&A5
+  680  ldx #0
+  690.m3fill
+  700  sta &FF00,X \ *** QUESTION 6 = why isn't this causing problems!? (because &FF00 is ROM space)
+  710  dex
+  720  bne m3fill
+  730  inc m3fill+2
+  740  bpl m3fill
+  750  rts
+  760]
+  770NEXT i
+  780MODE2
+  790VDU23,1,0;0;0;0;
+  800CALL code
+

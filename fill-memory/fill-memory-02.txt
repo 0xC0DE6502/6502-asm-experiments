@@ -1,0 +1,23 @@
+
+   10REM Copyright (c) 2020 0xC0DE (Twitter 0xC0DE6502)
+   20REM 6502 Asm experiment/tutorial: Fill Memory 02
+   30REM
+   40REM fill a block of memory from &3000 to &30ff (256 bytes) with zeroes
+   50REM deliberately *** FAULTY and INEFFICIENT! *** Can you fix and improve it?
+   60REM
+   70DIM code 1024-1
+   80FOR i=0 TO 3 STEP 3
+   90P%=code
+  100[opt i
+  110  ldx #0
+  120.fill
+  130  lda #0
+  140  sta &3000,X
+  150  inx
+  160  cpx #&FF
+  170  bne fill
+  180  rts
+  190]
+  200NEXT i
+  210CALL code
+

@@ -6,6 +6,6 @@
 
 !fill-memory/
 fill-memory/*
-!fill-memory/fill-memory-01.txt
+!fill-memory/fill-memory-??.txt
 !fill-memory/fill-memory*.6502
 
