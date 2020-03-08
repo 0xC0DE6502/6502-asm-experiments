@@ -9,3 +9,8 @@ fill-memory/*
 !fill-memory/fill-memory-??.txt
 !fill-memory/fill-memory*.6502
 
+!print-text/
+print-text/*
+!print-text/print-text-??.txt
+!print-text/print-text*.6502
+

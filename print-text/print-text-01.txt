@@ -1,0 +1,77 @@
+
+   10REM Copyright (c) 2020 0xC0DE (Twitter @0xC0DE6502)
+   20REM 6502 Asm experiment/tutorial: Print Text 01
+   30 
+   40REM Demonstrating ROM routine OSWRCH (Operating System Write Character) to print text on the screen (and do other useful stuff)
+   50REM Check for instance http://central.kaserver5.org/Kasoft/Typeset/BBC/Ch34.html for all VDU codes that also work with OSWRCH
+   60  
+   70REM ***Assignment: modify/expand this program and post a link to your code on my GitHub or on Twitter @0xC0DE6502 #6502coding
+   80 
+   90DIM code 1024-1
+  100zeropage=&0070
+  110oswrch=&FFEE: REM address of ROM routine OSWRCH
+  120FOR i=0 TO 3 STEP 3
+  130 
+  140REM zeropage variables go here
+  150P%=zeropage
+  160[opt i
+  170.zstringaddress EQUW 0 \ 2 bytes for holding the address to a string we want to print
+  180]
+  190 
+  200REM main program goes here
+  210P%=code
+  220[opt i
+  230  lda #6
+  240  jsr setscreenmode \ set screen MODE 6
+  250\
+  260  lda #string1 DIV 256 \ upper 8 bit (most significant byte = MSB) of 16-bit address of string1
+  270  ldx #string1 MOD 256 \ lower 8 bit (least significant byte = LSB) of 16-bit address of string1
+  280  jsr printstring \ print string1
+  290\
+  300  ldx #10
+  310  ldy #16
+  320  jsr printtab
+  330\
+  340  lda #string2 DIV 256 \ MSB of string2
+  350  ldx #string2 MOD 256 \ LSB of string2
+  360  jsr printstring \ print string2
+  370\
+  380  rts
+  390\
+  400.printtab \ subroutine "move cursor to (X,Y)", i.e. VDU31,X,Y
+  410  lda #31
+  420  jsr oswrch
+  430  txa \ transfer X to A
+  440  jsr oswrch
+  450  tya \ transfer Y to A
+  460  jsr oswrch
+  470  rts
+  480\
+  490.printstring \ subroutine "print string at address AX"
+  500  stx zstringaddress \ LSB first
+  510  sta zstringaddress+1 \ MSB
+  520  ldy #0
+  530\
+  540.printchar
+  550  lda (zstringaddress),Y \ get next character from string
+  560  beq exit \ found end of string which is marked with a zero byte
+  570  jsr oswrch \ use OSWRCH to print character on screen
+  580  iny
+  590  bne printchar \ make sure we don't end up in an infinite loop, so print a maximum of 256 characters
+  600.exit
+  610  rts
+  620\
+  630.setscreenmode \ subroutine "MODE x", i.e. VDU22,x
+  640  pha \ save A on stack for later
+  650  lda #22
+  660  jsr oswrch
+  670  pla \ restore A from stack
+  680  jsr oswrch
+  690  rts
+  700\
+  710.string1 EQUS "Hello Twitter!": EQUB 0 \ strings must be terminated by a zero byte and no more than 256 characters long
+  720.string2 EQUS "This is fun!": EQUB 0
+  730]
+  740NEXT i
+  750CALL code
+
