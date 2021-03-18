@@ -15,4 +15,3 @@ print-text/*
 !print-text/print-text*.6502
 
 !exomizer-3.02-decruncher
-exomizer-3.02-decruncher/*
