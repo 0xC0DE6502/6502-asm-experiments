@@ -16,7 +16,7 @@ And this anywhere in your code:
 include "exomizer302decruncher.6502"
 
 .my_crunched_data
-include "mycruncheddata.exo"
+incbin "mycruncheddata.exo"
 ```
 
 ### Important
