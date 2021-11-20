@@ -1,0 +1,238 @@
+; Bubbles
+; BeebAsm source for Acorn Electron and BBC Micro
+; Copyright (c) 0xC0DE 2021
+; Twitter @0xC0DE6502
+
+zrnd=&70
+zinvisible=&71
+zbubbleindex=&72
+zscreen=&73 ; 2 bytes
+
+oswrch=&ffee
+osbyte=&fff4
+
+N_BUBBLES=100 ; 1..128
+
+  org &1D00
+
+.main
+{
+  lda &240
+  eor &fc
+  sta zrnd ; seed
+
+  ldx #end_vdu-vdu-1
+.do_vdu
+  lda vdu,x
+  jsr oswrch
+  dex
+  bpl do_vdu
+
+{
+  ; init all bubbles
+  lda #N_BUBBLES-1
+  sta zbubbleindex
+.next_bubble  
+  ldx zbubbleindex
+  jsr set_random_bubble_coords ; needs X set, preserves X
+  dec zbubbleindex
+  bpl next_bubble ; BPL is safe, because <128
+}  
+
+  lda #128
+  sta zinvisible
+
+.mix
+
+{
+  ; 'redraw' all bubbles
+  lda #N_BUBBLES-1
+  sta zbubbleindex
+.next_bubble  
+  jsr redraw_bubble ; needs zbubbleindex // won't actually erase&draw when zinvisible<>0
+  dec zbubbleindex
+  bpl next_bubble ; BPL is safe here because N_BUBBLES is a small number
+}
+
+  dec zinvisible
+  bne mix
+
+{
+  ; initial draw
+  lda #N_BUBBLES-1
+  sta zbubbleindex
+.next_bubble  
+  ldx zbubbleindex
+  jsr plot_bubble ; initial draw
+  dec zbubbleindex
+  bpl next_bubble ; BPL is safe, because <128
+}  
+
+.again
+
+{
+  ; redraw all bubbles
+  lda #N_BUBBLES-1
+  sta zbubbleindex
+.next_bubble  
+  jsr redraw_bubble ; needs zbubbleindex // this does erase&draw because zinvisible==0 now
+  dec zbubbleindex
+  bpl next_bubble ; BPL is safe here because N_BUBBLES is a small number
+}
+
+  lda #19
+  jsr osbyte
+  jmp again
+
+}
+
+.vdu ; reversed // sets MODE 5, cursor off, defines colours
+  equb 0,0,0,6,2,19,0,0,0,4,0,19,5,5,22
+.end_vdu
+  equs "Bubbles (c) 0xC0DE 2021"
+
+.set_random_bubble_coords ; X must be set, preserves X
+{
+  ; random x-coord for bubbles
+.new_rnd
+  jsr rnd ; preserves X
+  cmp #160-8
+  bcs new_rnd
+  ; C=0
+  adc #4
+  sta bubble_x,x
+  ; random y-coord for bubbles >=0, <254 and even
+  jsr rnd ; preserves X 
+  and #%11111110 ; A now in range 0..254 (even)
+  cmp #254
+  bne store
+  lda #252
+.store
+  sta bubble_y,x
+  rts
+}
+
+.rnd
+{
+  lda zrnd
+  beq do_xor
+  asl a
+  beq store
+  bcc store
+.do_xor
+  eor #&c3
+.store
+  sta zrnd  
+  rts
+}
+
+.bubble_sine_offset
+  for n,0,16-1
+    equb 1.5*sin(2*PI*n/16)
+  next ;n
+
+.redraw_bubble
+{
+  jsr plot_bubble ; erase bubble at old pos, needs zbubbleindex
+  ; update current bubble pos
+  ldx zbubbleindex
+  ldy bubble_y,x ; even
+  dey
+  dey
+  txa
+  and #1
+  beq store
+  dey
+  dey
+.store
+  tya
+  cpy #252
+  bcc plot
+  ; reset when new y-coord < 0 (sort of)
+  jsr set_random_bubble_coords ; needs X set, preserves X
+  lda #252 ; y-coord of wrap-around bubble starts at 252
+.plot
+  sta bubble_y,x
+  ; fall through to plot_bubble
+}
+
+.plot_bubble
+{
+  lda zinvisible
+  bne end
+
+  ldy zbubbleindex
+  lda bubble_y,y ; even
+  and #63
+  lsr a
+  lsr a
+  tax
+  lda bubble_sine_offset,x
+  clc 
+  adc bubble_x,y ; NOT stored back in bubble_x,y
+  tax
+  lda bubble_y,y
+  tay
+
+  ; set zscreen from x-coord and even(!) y-coord
+  lda pixelrow_lo,y
+  clc
+  adc offset_lo,x
+  sta zscreen
+  lda pixelrow_hi,y
+  adc offset_hi,x
+  sta zscreen+1
+
+  txa
+  and #3
+  tax ; determines position of pixel within screen byte
+  ldy #0
+  jsr pixel ; double height & wide pixel, making it square in MODE 5
+.pixel
+  lda (zscreen),y
+  eor bubble_mask,x
+  sta (zscreen),y
+  iny
+.end
+  rts
+}
+
+; only even scanlines
+.pixelrow_lo
+  for n,0,256-1,2
+    equb lo(&5800+(n div 8)*320+(n mod 8))
+    equb hi(&5800+(n div 8)*320+(n mod 8))
+  next ;n
+pixelrow_hi=pixelrow_lo+1
+
+.offset_lo
+  for n,0,160-1
+    equb lo(8*(n div 4))
+  next ;n
+
+.offset_hi
+  for n,0,160-1
+    equb hi(8*(n div 4))
+  next ;n
+
+.bubble_mask
+  equb %10000000
+  equb %01000000
+  equb %00100000
+  equb %00010000
+
+.bubble_x
+  skip N_BUBBLES
+
+.bubble_y
+  skip N_BUBBLES
+
+save "BUBBLES", main, *, main, main
+
+  org &8000
+
+  equb "*BASIC", 13
+  equb "CLOSE#0:*RUN BUBBLES", 13
+
+  save "!BOOT", &8000, *, &ff0000, &ff0000
+

@@ -15,3 +15,7 @@ print-text/*
 !print-text/print-text*.6502
 
 !exomizer-3.02-decruncher
+
+!bubbles/
+bubbles/*
+!bubbles/bubbles.6502
